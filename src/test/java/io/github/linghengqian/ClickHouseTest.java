@@ -24,7 +24,7 @@ import static org.awaitility.Awaitility.await;
 
 @SuppressWarnings({"resource", "SqlNoDataSourceInspection"})
 @Testcontainers
-public class SimpleTest {
+public class ClickHouseTest {
 
     private static final Network NETWORK = Network.newNetwork();
 
