@@ -11,3 +11,9 @@ cd ./clickhouse-acid-delete-test/
 sdk use java 23-open
 ./mvnw -T 1C clean test
 ```
+
+- The log is as follows.
+
+```shell
+
+```
