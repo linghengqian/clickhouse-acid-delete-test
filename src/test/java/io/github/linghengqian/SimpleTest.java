@@ -14,16 +14,10 @@ import javax.sql.DataSource;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.time.Duration;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Properties;
 import java.util.stream.IntStream;
 
 import static org.awaitility.Awaitility.await;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.MatcherAssert.assertThat;
 
 @SuppressWarnings({"resource", "SqlNoDataSourceInspection"})
 @Testcontainers
@@ -60,6 +54,10 @@ public class SimpleTest {
     @Test
     void test() throws SQLException {
         jdbcUrlPrefix = "jdbc:ch://localhost:" + CONTAINER.getMappedPort(8123) + "/";
+        await().atMost(Duration.ofMinutes(1L)).ignoreExceptions().until(() -> {
+            openConnection("default").close();
+            return true;
+        });
         // todo wait clickhouse keeper
         await().pollDelay(Duration.ofSeconds(5L)).until(() -> true);
         try (Connection connection = openConnection("default");
@@ -86,24 +84,24 @@ public class SimpleTest {
         DataSource dataSource = new HikariDataSource(config);
         IntStream.range(1, 11).parallel().forEach(i -> {
             Order order = new Order(0, i % 2, i, i, "INSERT_TEST");
-            try (Connection connection = dataSource.getConnection();
-                 PreparedStatement statement = connection.prepareStatement(
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement ps = conn.prepareStatement(
                          "INSERT INTO t_order (user_id, order_type, address_id, status) VALUES (?, ?, ?, ?)",
                          Statement.NO_GENERATED_KEYS)) {
-                statement.setInt(1, order.userId());
-                statement.setInt(2, order.orderType());
-                statement.setLong(3, order.addressId());
-                statement.setString(4, order.status());
-                statement.executeUpdate();
+                ps.setInt(1, order.userId());
+                ps.setInt(2, order.orderType());
+                ps.setLong(3, order.addressId());
+                ps.setString(4, order.status());
+                ps.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         });
-        IntStream.range(1, 11).parallel().forEach(i -> {
+        IntStream.range(1, 11).forEach(i -> {
             try (Connection connection = dataSource.getConnection();
-                 PreparedStatement statement = connection.prepareStatement("alter table t_order delete where address_id=?")) {
-                statement.setLong(1, i);
-                statement.executeUpdate();
+                 PreparedStatement ps = connection.prepareStatement("alter table t_order delete where address_id=?")) {
+                ps.setLong(1, i);
+                ps.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
@@ -115,24 +113,5 @@ public class SimpleTest {
         props.setProperty("user", "default");
         props.setProperty("password", "");
         return DriverManager.getConnection(jdbcUrlPrefix + databaseName + "?transactionSupport=true", props);
-    }
-
-    public List<Order> selectAll(DataSource dataSource) throws SQLException {
-        List<Order> result = new LinkedList<>();
-        try (Connection connection = dataSource.getConnection();
-             PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM t_order");
-             ResultSet resultSet = preparedStatement.executeQuery()) {
-            while (resultSet.next()) {
-                result.add(
-                        new Order(
-                                resultSet.getLong(1),
-                                resultSet.getInt(2),
-                                resultSet.getInt(3),
-                                resultSet.getLong(4),
-                                resultSet.getString(5)
-                        ));
-            }
-        }
-        return result;
     }
 }
