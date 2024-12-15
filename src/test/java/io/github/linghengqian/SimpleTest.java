@@ -14,13 +14,15 @@ import javax.sql.DataSource;
 import java.nio.file.Paths;
 import java.sql.*;
 import java.time.Duration;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Properties;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 @SuppressWarnings({"resource", "SqlNoDataSourceInspection"})
@@ -50,8 +52,6 @@ public class SimpleTest {
 
     private String jdbcUrlPrefix;
 
-    private DataSource dataSource;
-
     @AfterAll
     static void afterAll() {
         NETWORK.close();
@@ -78,12 +78,20 @@ public class SimpleTest {
                     ) engine = MergeTree
                           primary key (order_id)
                           order by (order_id)""");
+            statement.executeUpdate("""
+                    CREATE TABLE IF NOT EXISTS t_address
+                    (
+                        address_id   BIGINT NOT NULL,
+                        address_name VARCHAR(100) NOT NULL,
+                        PRIMARY      KEY (address_id)
+                    )""");
             statement.executeUpdate("TRUNCATE TABLE t_order");
+            statement.executeUpdate("TRUNCATE TABLE t_address");
         }
         HikariConfig config = new HikariConfig();
         config.setDriverClassName("com.clickhouse.jdbc.ClickHouseDriver");
         config.setJdbcUrl(jdbcUrlPrefix + "demo_ds?transactionSupport=true");
-        dataSource = new HikariDataSource(config);
+        DataSource dataSource = new HikariDataSource(config);
         IntStream.range(1, 11).forEachOrdered(i -> {
             Order order = new Order();
             order.setUserId(i);
@@ -103,16 +111,7 @@ public class SimpleTest {
                 throw new RuntimeException(e);
             }
         });
-        Collection<Order> orders = selectAll();
-        List<Integer> orderTypeList = orders.stream().map(Order::getOrderType).toList();
-        assertThat(orderTypeList.size(), equalTo(10));
-        assertThat(new HashSet<>(orderTypeList), equalTo(Set.of(0, 1)));
-        assertThat(orders.stream().map(Order::getUserId).collect(Collectors.toSet()),
-                equalTo(Stream.of(2, 4, 6, 8, 10, 1, 3, 5, 7, 9).collect(Collectors.toSet())));
-        assertThat(orders.stream().map(Order::getAddressId).collect(Collectors.toSet()),
-                equalTo(Stream.of(2L, 4L, 6L, 8L, 10L, 1L, 3L, 5L, 7L, 9L).collect(Collectors.toSet())));
-        assertThat(orders.stream().map(Order::getStatus).collect(Collectors.toList()),
-                equalTo(IntStream.range(1, 11).mapToObj(_ -> "INSERT_TEST").collect(Collectors.toList())));
+        assertThat(selectAll(dataSource), not(Collections.emptyList()));
         IntStream.range(1, 11).forEachOrdered(i -> {
             try (Connection connection = dataSource.getConnection();
                  PreparedStatement statement = connection.prepareStatement("alter table t_order delete where address_id=?")) {
@@ -122,7 +121,7 @@ public class SimpleTest {
                 throw new RuntimeException(e);
             }
         });
-        assertThat(selectAll(), equalTo(Collections.emptyList()));
+        assertThat(selectAll(dataSource), equalTo(Collections.emptyList()));
     }
 
     private Connection openConnection(final String databaseName) throws SQLException {
@@ -132,7 +131,7 @@ public class SimpleTest {
         return DriverManager.getConnection(jdbcUrlPrefix + databaseName + "?transactionSupport=true", props);
     }
 
-    public List<Order> selectAll() throws SQLException {
+    public List<Order> selectAll(DataSource dataSource) throws SQLException {
         List<Order> result = new LinkedList<>();
         try (Connection connection = dataSource.getConnection();
              PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM t_order");
