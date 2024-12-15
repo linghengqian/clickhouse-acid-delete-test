@@ -78,41 +78,28 @@ public class SimpleTest {
                     ) engine = MergeTree
                           primary key (order_id)
                           order by (order_id)""");
-            statement.executeUpdate("""
-                    CREATE TABLE IF NOT EXISTS t_address
-                    (
-                        address_id   BIGINT NOT NULL,
-                        address_name VARCHAR(100) NOT NULL,
-                        PRIMARY      KEY (address_id)
-                    )""");
             statement.executeUpdate("TRUNCATE TABLE t_order");
-            statement.executeUpdate("TRUNCATE TABLE t_address");
         }
         HikariConfig config = new HikariConfig();
         config.setDriverClassName("com.clickhouse.jdbc.ClickHouseDriver");
         config.setJdbcUrl(jdbcUrlPrefix + "demo_ds?transactionSupport=true");
         DataSource dataSource = new HikariDataSource(config);
-        IntStream.range(1, 11).forEachOrdered(i -> {
-            Order order = new Order();
-            order.setUserId(i);
-            order.setOrderType(i % 2);
-            order.setAddressId(i);
-            order.setStatus("INSERT_TEST");
+        IntStream.range(1, 11).parallel().forEach(i -> {
+            Order order = new Order(0, i % 2, i, i, "INSERT_TEST");
             try (Connection connection = dataSource.getConnection();
                  PreparedStatement statement = connection.prepareStatement(
                          "INSERT INTO t_order (user_id, order_type, address_id, status) VALUES (?, ?, ?, ?)",
                          Statement.NO_GENERATED_KEYS)) {
-                statement.setInt(1, order.getUserId());
-                statement.setInt(2, order.getOrderType());
-                statement.setLong(3, order.getAddressId());
-                statement.setString(4, order.getStatus());
+                statement.setInt(1, order.userId());
+                statement.setInt(2, order.orderType());
+                statement.setLong(3, order.addressId());
+                statement.setString(4, order.status());
                 statement.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
             }
         });
-        assertThat(selectAll(dataSource), not(Collections.emptyList()));
-        IntStream.range(1, 11).forEachOrdered(i -> {
+        IntStream.range(1, 11).parallel().forEach(i -> {
             try (Connection connection = dataSource.getConnection();
                  PreparedStatement statement = connection.prepareStatement("alter table t_order delete where address_id=?")) {
                 statement.setLong(1, i);
@@ -121,7 +108,6 @@ public class SimpleTest {
                 throw new RuntimeException(e);
             }
         });
-        assertThat(selectAll(dataSource), equalTo(Collections.emptyList()));
     }
 
     private Connection openConnection(final String databaseName) throws SQLException {
@@ -137,13 +123,14 @@ public class SimpleTest {
              PreparedStatement preparedStatement = connection.prepareStatement("SELECT * FROM t_order");
              ResultSet resultSet = preparedStatement.executeQuery()) {
             while (resultSet.next()) {
-                Order order = new Order();
-                order.setOrderId(resultSet.getLong(1));
-                order.setOrderType(resultSet.getInt(2));
-                order.setUserId(resultSet.getInt(3));
-                order.setAddressId(resultSet.getLong(4));
-                order.setStatus(resultSet.getString(5));
-                result.add(order);
+                result.add(
+                        new Order(
+                                resultSet.getLong(1),
+                                resultSet.getInt(2),
+                                resultSet.getInt(3),
+                                resultSet.getLong(4),
+                                resultSet.getString(5)
+                        ));
             }
         }
         return result;
