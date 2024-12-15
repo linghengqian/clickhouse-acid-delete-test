@@ -56,7 +56,7 @@ public class ClickHouseTest {
     }
 
     @Test
-    void test() throws SQLException {
+    void testClickHouse() throws SQLException {
         jdbcUrlPrefix = "jdbc:ch://localhost:" + CONTAINER.getMappedPort(8123) + "/";
         String connectionString = CLICKHOUSE_KEEPER_CONTAINER.getHost() + ":" + CLICKHOUSE_KEEPER_CONTAINER.getMappedPort(9181);
         await().atMost(Duration.ofMinutes(1L)).ignoreExceptions().until(() -> {
