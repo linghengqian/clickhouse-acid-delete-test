@@ -2,7 +2,6 @@ package io.github.linghengqian;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -61,40 +60,16 @@ public class SimpleTest {
     @Test
     void test() throws SQLException {
         jdbcUrlPrefix = "jdbc:ch://localhost:" + CONTAINER.getMappedPort(8123) + "/";
-        await().atMost(Duration.ofMinutes(1L)).ignoreExceptions().until(() -> {
-            openConnection("default").close();
-            return true;
-        });
+        // todo wait clickhouse keeper
+        await().pollDelay(Duration.ofSeconds(5L)).until(() -> true);
         try (Connection connection = openConnection("default");
              Statement statement = connection.createStatement()) {
             statement.executeUpdate("CREATE DATABASE demo_ds");
         }
-        initTable();
-        HikariConfig config = new HikariConfig();
-        config.setDriverClassName("com.clickhouse.jdbc.ClickHouseDriver");
-        config.setJdbcUrl(jdbcUrlPrefix + "demo_ds?transactionSupport=true");
-        dataSource = new HikariDataSource(config);
-        insertData();
-        extracted();
-        deleteDataInClickHouse();
-        assertThat(selectAll(), equalTo(Collections.emptyList()));
-//        orderItemRepository.assertRollbackWithTransactions();
-
-    }
-
-    private Connection openConnection(final String databaseName) throws SQLException {
-        Properties props = new Properties();
-        props.setProperty("user", "default");
-        props.setProperty("password", "");
-        return DriverManager.getConnection(jdbcUrlPrefix + databaseName, props);
-    }
-
-    private void initTable() throws SQLException {
         try (Connection connection = openConnection("demo_ds");
              Statement statement = connection.createStatement()) {
             statement.executeUpdate("""
-                    create table IF NOT EXISTS t_order
-                    (
+                    create table IF NOT EXISTS t_order (
                         order_id   Int64 NOT NULL DEFAULT rand(),
                         order_type Int32,
                         user_id    Int32 NOT NULL,
@@ -105,29 +80,29 @@ public class SimpleTest {
                           order by (order_id)""");
             statement.executeUpdate("TRUNCATE TABLE t_order");
         }
-    }
-
-    public void insertData() throws SQLException {
-        for (int i = 1; i <= 10; i++) {
+        HikariConfig config = new HikariConfig();
+        config.setDriverClassName("com.clickhouse.jdbc.ClickHouseDriver");
+        config.setJdbcUrl(jdbcUrlPrefix + "demo_ds?transactionSupport=true");
+        dataSource = new HikariDataSource(config);
+        IntStream.range(1, 11).forEachOrdered(i -> {
             Order order = new Order();
             order.setUserId(i);
             order.setOrderType(i % 2);
             order.setAddressId(i);
             order.setStatus("INSERT_TEST");
             try (Connection connection = dataSource.getConnection();
-                 PreparedStatement preparedStatement = connection.prepareStatement(
+                 PreparedStatement statement = connection.prepareStatement(
                          "INSERT INTO t_order (user_id, order_type, address_id, status) VALUES (?, ?, ?, ?)",
                          Statement.NO_GENERATED_KEYS)) {
-                preparedStatement.setInt(1, order.getUserId());
-                preparedStatement.setInt(2, order.getOrderType());
-                preparedStatement.setLong(3, order.getAddressId());
-                preparedStatement.setString(4, order.getStatus());
-                preparedStatement.executeUpdate();
+                statement.setInt(1, order.getUserId());
+                statement.setInt(2, order.getOrderType());
+                statement.setLong(3, order.getAddressId());
+                statement.setString(4, order.getStatus());
+                statement.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
             }
-        }
-    }
-
-    private void extracted() throws SQLException {
+        });
         Collection<Order> orders = selectAll();
         List<Integer> orderTypeList = orders.stream().map(Order::getOrderType).toList();
         assertThat(orderTypeList.size(), equalTo(10));
@@ -137,7 +112,24 @@ public class SimpleTest {
         assertThat(orders.stream().map(Order::getAddressId).collect(Collectors.toSet()),
                 equalTo(Stream.of(2L, 4L, 6L, 8L, 10L, 1L, 3L, 5L, 7L, 9L).collect(Collectors.toSet())));
         assertThat(orders.stream().map(Order::getStatus).collect(Collectors.toList()),
-                equalTo(IntStream.range(1, 11).mapToObj(i -> "INSERT_TEST").collect(Collectors.toList())));
+                equalTo(IntStream.range(1, 11).mapToObj(_ -> "INSERT_TEST").collect(Collectors.toList())));
+        IntStream.range(1, 11).forEachOrdered(i -> {
+            try (Connection connection = dataSource.getConnection();
+                 PreparedStatement statement = connection.prepareStatement("alter table t_order delete where address_id=?")) {
+                statement.setLong(1, i);
+                statement.executeUpdate();
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        assertThat(selectAll(), equalTo(Collections.emptyList()));
+    }
+
+    private Connection openConnection(final String databaseName) throws SQLException {
+        Properties props = new Properties();
+        props.setProperty("user", "default");
+        props.setProperty("password", "");
+        return DriverManager.getConnection(jdbcUrlPrefix + databaseName + "?transactionSupport=true", props);
     }
 
     public List<Order> selectAll() throws SQLException {
@@ -156,18 +148,5 @@ public class SimpleTest {
             }
         }
         return result;
-    }
-
-    public void deleteDataInClickHouse() {
-        Awaitility.await().pollDelay(Duration.ofSeconds(5L)).until(() -> true);
-        IntStream.range(1, 11).forEachOrdered(i -> {
-            try (Connection connection = dataSource.getConnection();
-                 PreparedStatement preparedStatement = connection.prepareStatement("alter table t_order delete where address_id=?")) {
-                preparedStatement.setLong(1, i);
-                preparedStatement.executeUpdate();
-            } catch (SQLException e) {
-                throw new RuntimeException(e);
-            }
-        });
     }
 }
