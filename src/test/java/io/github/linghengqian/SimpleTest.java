@@ -2,6 +2,9 @@ package io.github.linghengqian;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
@@ -32,6 +35,7 @@ public class SimpleTest {
                     "/etc/clickhouse-keeper/keeper_config.xml"
             )
             .withNetwork(NETWORK)
+            .withExposedPorts(9181)
             .withNetworkAliases("clickhouse-keeper-01");
 
     @Container
@@ -54,12 +58,17 @@ public class SimpleTest {
     @Test
     void test() throws SQLException {
         jdbcUrlPrefix = "jdbc:ch://localhost:" + CONTAINER.getMappedPort(8123) + "/";
+        String connectionString = CLICKHOUSE_KEEPER_CONTAINER.getHost() + ":" + CLICKHOUSE_KEEPER_CONTAINER.getMappedPort(9181);
         await().atMost(Duration.ofMinutes(1L)).ignoreExceptions().until(() -> {
+            try (CuratorFramework client = CuratorFrameworkFactory.builder()
+                    .connectString(connectionString)
+                    .retryPolicy(new ExponentialBackoffRetry(1000, 3))
+                    .build()) {
+                client.start();
+            }
             openConnection("default").close();
             return true;
         });
-        // todo wait clickhouse keeper
-        await().pollDelay(Duration.ofSeconds(5L)).until(() -> true);
         try (Connection connection = openConnection("default");
              Statement statement = connection.createStatement()) {
             statement.executeUpdate("CREATE DATABASE demo_ds");
@@ -68,7 +77,7 @@ public class SimpleTest {
              Statement statement = connection.createStatement()) {
             statement.executeUpdate("""
                     create table IF NOT EXISTS t_order (
-                        order_id   Int64 NOT NULL DEFAULT rand(),
+                        order_id   Int64 NOT NULL,
                         order_type Int32,
                         user_id    Int32 NOT NULL,
                         address_id Int64 NOT NULL,
@@ -83,7 +92,7 @@ public class SimpleTest {
         config.setJdbcUrl(jdbcUrlPrefix + "demo_ds?transactionSupport=true");
         DataSource dataSource = new HikariDataSource(config);
         IntStream.range(1, 11).parallel().forEach(i -> {
-            Order order = new Order(0, i % 2, i, i, "INSERT_TEST");
+            Order order = new Order(0L, i % 2, i, i, "INSERT_TEST");
             try (Connection conn = dataSource.getConnection();
                  PreparedStatement ps = conn.prepareStatement(
                          "INSERT INTO t_order (user_id, order_type, address_id, status) VALUES (?, ?, ?, ?)",
@@ -97,9 +106,9 @@ public class SimpleTest {
                 throw new RuntimeException(e);
             }
         });
-        IntStream.range(1, 11).forEach(i -> {
-            try (Connection connection = dataSource.getConnection();
-                 PreparedStatement ps = connection.prepareStatement("alter table t_order delete where address_id=?")) {
+        IntStream.range(1, 11).parallel().forEach(i -> {
+            try (Connection conn = dataSource.getConnection();
+                 PreparedStatement ps = conn.prepareStatement("alter table t_order delete where address_id=?")) {
                 ps.setLong(1, i);
                 ps.executeUpdate();
             } catch (SQLException e) {
