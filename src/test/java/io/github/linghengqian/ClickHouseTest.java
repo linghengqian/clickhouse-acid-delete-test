@@ -90,6 +90,7 @@ public class ClickHouseTest {
         HikariConfig config = new HikariConfig();
         config.setDriverClassName("com.clickhouse.jdbc.ClickHouseDriver");
         config.setJdbcUrl(jdbcUrlPrefix + "demo_ds?transactionSupport=true");
+        config.setUsername("default");
         DataSource dataSource = new HikariDataSource(config);
         IntStream.range(1, 11).parallel().forEach(i -> {
             try (Connection conn = dataSource.getConnection();
@@ -112,6 +113,7 @@ public class ClickHouseTest {
                 throw new RuntimeException(e);
             }
         });
+        dataSource.unwrap(HikariDataSource.class).close();
     }
 
     private Connection openConnection(final String databaseName) throws SQLException {

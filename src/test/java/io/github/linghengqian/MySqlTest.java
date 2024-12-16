@@ -15,7 +15,7 @@ import java.util.stream.IntStream;
 
 import static org.awaitility.Awaitility.await;
 
-@SuppressWarnings({"SqlNoDataSourceInspection", "resource"})
+@SuppressWarnings({"resource", "SqlNoDataSourceInspection"})
 @Testcontainers
 public class MySqlTest {
 
@@ -76,6 +76,7 @@ public class MySqlTest {
                 throw new RuntimeException(e);
             }
         });
+        dataSource.unwrap(HikariDataSource.class).close();
     }
 
     private Connection openConnection(final String databaseName) throws SQLException {
