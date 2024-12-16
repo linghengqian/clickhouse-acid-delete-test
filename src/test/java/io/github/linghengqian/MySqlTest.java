@@ -34,8 +34,8 @@ public class MySqlTest {
             return true;
         });
         try (Connection connection = openConnection("");
-             Statement statement = connection.createStatement()) {
-            statement.executeUpdate("CREATE DATABASE demo_ds");
+             Statement st = connection.createStatement()) {
+            st.executeUpdate("CREATE DATABASE demo_ds");
         }
         try (Connection connection = openConnection("demo_ds");
              Statement statement = connection.createStatement()) {
@@ -56,13 +56,12 @@ public class MySqlTest {
         config.setPassword("example");
         DataSource dataSource = new HikariDataSource(config);
         IntStream.range(1, 11).parallel().forEach(i -> {
-            Order order = new Order(0L, i % 2, i, i, "INSERT_TEST");
             try (Connection conn = dataSource.getConnection();
                  PreparedStatement ps = conn.prepareStatement("INSERT INTO t_order (user_id, order_type, address_id, status) VALUES (?, ?, ?, ?)")) {
-                ps.setInt(1, order.userId());
-                ps.setInt(2, order.orderType());
-                ps.setLong(3, order.addressId());
-                ps.setString(4, order.status());
+                ps.setInt(1, i);
+                ps.setInt(2, i % 2);
+                ps.setLong(3, i);
+                ps.setString(4, "INSERT_TEST");
                 ps.executeUpdate();
             } catch (SQLException e) {
                 throw new RuntimeException(e);
