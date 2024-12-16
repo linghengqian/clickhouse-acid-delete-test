@@ -94,9 +94,7 @@ public class ClickHouseTest {
         IntStream.range(1, 11).parallel().forEach(i -> {
             Order order = new Order(0L, i % 2, i, i, "INSERT_TEST");
             try (Connection conn = dataSource.getConnection();
-                 PreparedStatement ps = conn.prepareStatement(
-                         "INSERT INTO t_order (user_id, order_type, address_id, status) VALUES (?, ?, ?, ?)",
-                         Statement.NO_GENERATED_KEYS)) {
+                 PreparedStatement ps = conn.prepareStatement("INSERT INTO t_order (user_id, order_type, address_id, status) VALUES (?, ?, ?, ?)")) {
                 ps.setInt(1, order.userId());
                 ps.setInt(2, order.orderType());
                 ps.setLong(3, order.addressId());

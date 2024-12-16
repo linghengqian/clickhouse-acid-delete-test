@@ -48,10 +48,10 @@ sdk use java 23-open
 SLF4J: No SLF4J providers were found.
 SLF4J: Defaulting to no-operation (NOP) logger implementation
 SLF4J: See https://www.slf4j.org/codes.html#noProviders for further details.
-[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 6.702 s <<< FAILURE! -- in io.github.linghengqian.ClickHouseTest
-[ERROR] io.github.linghengqian.ClickHouseTest.testClickHouse -- Time elapsed: 0.834 s <<< ERROR!
+[ERROR] Tests run: 1, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 8.076 s <<< FAILURE! -- in io.github.linghengqian.ClickHouseTest
+[ERROR] io.github.linghengqian.ClickHouseTest.testClickHouse -- Time elapsed: 1.091 s <<< ERROR!
 java.lang.RuntimeException: 
-java.lang.RuntimeException: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception happened during execution of mutation 'mutation_13.txt' with part 'all_1_6_1' reason: 'Serialization error: part all_1_6_1 is locked by transaction 13215081839903462764'. This error maybe retryable or not. In case of unretryable error, mutation can be killed with KILL MUTATION query 
+java.lang.RuntimeException: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception happened during execution of mutation 'mutation_14.txt' with part 'all_1_6_1' reason: 'Serialization error: part all_1_6_1 is locked by transaction 15500186818157375885'. This error maybe retryable or not. In case of unretryable error, mutation can be killed with KILL MUTATION query 
 
 0. DB::checkMutationStatus(std::optional<DB::MergeTreeMutationStatus>&, std::set<String, std::less<String>, std::allocator<String>> const&) @ 0x00000000129ef95b
 1. DB::StorageMergeTree::waitForMutation(long, String const&, bool) @ 0x0000000012bf9652
@@ -67,8 +67,8 @@ java.lang.RuntimeException: java.sql.BatchUpdateException: Code: 341. DB::Except
 11. Poco::Net::TCPServerDispatcher::run() @ 0x0000000015d899b9
 12. Poco::PooledThread::run() @ 0x0000000015d563fc
 13. Poco::ThreadImpl::runnableEntry(void*) @ 0x0000000015d5499d
-14. ? @ 0x00007f170cdddac3
-15. ? @ 0x00007f170ce6ea04
+14. ? @ 0x00007f08baa1aac3
+15. ? @ 0x00007f08baaaba04
 
 . (UNFINISHED) (version 24.11.1.2557 (official build))
 
@@ -84,11 +84,11 @@ java.lang.RuntimeException: java.sql.BatchUpdateException: Code: 341. DB::Except
         at java.base/java.util.stream.AbstractPipeline.evaluate(AbstractPipeline.java:264)
         at java.base/java.util.stream.IntPipeline.forEach(IntPipeline.java:466)
         at java.base/java.util.stream.IntPipeline$Head.forEach(IntPipeline.java:623)
-        at io.github.linghengqian.ClickHouseTest.testClickHouse(ClickHouseTest.java:109)
+        at io.github.linghengqian.ClickHouseTest.testClickHouse(ClickHouseTest.java:107)
         at java.base/java.lang.reflect.Method.invoke(Method.java:580)
         at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
         at java.base/java.util.ArrayList.forEach(ArrayList.java:1597)
-Caused by: java.lang.RuntimeException: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception happened during execution of mutation 'mutation_13.txt' with part 'all_1_6_1' reason: 'Serialization error: part all_1_6_1 is locked by transaction 13215081839903462764'. This error maybe retryable or not. In case of unretryable error, mutation can be killed with KILL MUTATION query 
+Caused by: java.lang.RuntimeException: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception happened during execution of mutation 'mutation_14.txt' with part 'all_1_6_1' reason: 'Serialization error: part all_1_6_1 is locked by transaction 15500186818157375885'. This error maybe retryable or not. In case of unretryable error, mutation can be killed with KILL MUTATION query 
 
 0. DB::checkMutationStatus(std::optional<DB::MergeTreeMutationStatus>&, std::set<String, std::less<String>, std::allocator<String>> const&) @ 0x00000000129ef95b
 1. DB::StorageMergeTree::waitForMutation(long, String const&, bool) @ 0x0000000012bf9652
@@ -104,12 +104,12 @@ Caused by: java.lang.RuntimeException: java.sql.BatchUpdateException: Code: 341.
 11. Poco::Net::TCPServerDispatcher::run() @ 0x0000000015d899b9
 12. Poco::PooledThread::run() @ 0x0000000015d563fc
 13. Poco::ThreadImpl::runnableEntry(void*) @ 0x0000000015d5499d
-14. ? @ 0x00007f170cdddac3
-15. ? @ 0x00007f170ce6ea04
+14. ? @ 0x00007f08baa1aac3
+15. ? @ 0x00007f08baaaba04
 
 . (UNFINISHED) (version 24.11.1.2557 (official build))
 
-        at io.github.linghengqian.ClickHouseTest.lambda$testClickHouse$2(ClickHouseTest.java:115)
+        at io.github.linghengqian.ClickHouseTest.lambda$testClickHouse$2(ClickHouseTest.java:113)
         at java.base/java.util.stream.ForEachOps$ForEachOp$OfInt.accept(ForEachOps.java:205)
         at java.base/java.util.stream.Streams$RangeIntSpliterator.forEachRemaining(Streams.java:104)
         at java.base/java.util.Spliterator$OfInt.forEachRemaining(Spliterator.java:712)
@@ -120,7 +120,7 @@ Caused by: java.lang.RuntimeException: java.sql.BatchUpdateException: Code: 341.
         at java.base/java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec(ForkJoinPool.java:1458)
         at java.base/java.util.concurrent.ForkJoinPool.runWorker(ForkJoinPool.java:2034)
         at java.base/java.util.concurrent.ForkJoinWorkerThread.run(ForkJoinWorkerThread.java:189)
-Caused by: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception happened during execution of mutation 'mutation_13.txt' with part 'all_1_6_1' reason: 'Serialization error: part all_1_6_1 is locked by transaction 13215081839903462764'. This error maybe retryable or not. In case of unretryable error, mutation can be killed with KILL MUTATION query 
+Caused by: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception happened during execution of mutation 'mutation_14.txt' with part 'all_1_6_1' reason: 'Serialization error: part all_1_6_1 is locked by transaction 15500186818157375885'. This error maybe retryable or not. In case of unretryable error, mutation can be killed with KILL MUTATION query 
 
 0. DB::checkMutationStatus(std::optional<DB::MergeTreeMutationStatus>&, std::set<String, std::less<String>, std::allocator<String>> const&) @ 0x00000000129ef95b
 1. DB::StorageMergeTree::waitForMutation(long, String const&, bool) @ 0x0000000012bf9652
@@ -136,8 +136,8 @@ Caused by: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception ha
 11. Poco::Net::TCPServerDispatcher::run() @ 0x0000000015d899b9
 12. Poco::PooledThread::run() @ 0x0000000015d563fc
 13. Poco::ThreadImpl::runnableEntry(void*) @ 0x0000000015d5499d
-14. ? @ 0x00007f170cdddac3
-15. ? @ 0x00007f170ce6ea04
+14. ? @ 0x00007f08baa1aac3
+15. ? @ 0x00007f08baaaba04
 
 . (UNFINISHED) (version 24.11.1.2557 (official build))
 
@@ -147,16 +147,16 @@ Caused by: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception ha
         at com.clickhouse.jdbc.internal.AbstractPreparedStatement.executeUpdate(AbstractPreparedStatement.java:135)
         at com.zaxxer.hikari.pool.ProxyPreparedStatement.executeUpdate(ProxyPreparedStatement.java:61)
         at com.zaxxer.hikari.pool.HikariProxyPreparedStatement.executeUpdate(HikariProxyPreparedStatement.java)
-        at io.github.linghengqian.ClickHouseTest.lambda$testClickHouse$2(ClickHouseTest.java:113)
+        at io.github.linghengqian.ClickHouseTest.lambda$testClickHouse$2(ClickHouseTest.java:111)
         ... 10 more
 
 [INFO] Running io.github.linghengqian.MySqlTest
-[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.78 s -- in io.github.linghengqian.MySqlTest
+[INFO] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 11.66 s -- in io.github.linghengqian.MySqlTest
 [INFO] 
 [INFO] Results:
 [INFO] 
 [ERROR] Errors: 
-[ERROR]   ClickHouseTest.testClickHouse:109 » Runtime java.lang.RuntimeException: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception happened during execution of mutation 'mutation_13.txt' with part 'all_1_6_1' reason: 'Serialization error: part all_1_6_1 is locked by transaction 13215081839903462764'. This error maybe retryable or not. In case of unretryable error, mutation can be killed with KILL MUTATION query 
+[ERROR]   ClickHouseTest.testClickHouse:107 » Runtime java.lang.RuntimeException: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception happened during execution of mutation 'mutation_14.txt' with part 'all_1_6_1' reason: 'Serialization error: part all_1_6_1 is locked by transaction 15500186818157375885'. This error maybe retryable or not. In case of unretryable error, mutation can be killed with KILL MUTATION query 
 
 0. DB::checkMutationStatus(std::optional<DB::MergeTreeMutationStatus>&, std::set<String, std::less<String>, std::allocator<String>> const&) @ 0x00000000129ef95b
 1. DB::StorageMergeTree::waitForMutation(long, String const&, bool) @ 0x0000000012bf9652
@@ -172,8 +172,8 @@ Caused by: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception ha
 11. Poco::Net::TCPServerDispatcher::run() @ 0x0000000015d899b9
 12. Poco::PooledThread::run() @ 0x0000000015d563fc
 13. Poco::ThreadImpl::runnableEntry(void*) @ 0x0000000015d5499d
-14. ? @ 0x00007f170cdddac3
-15. ? @ 0x00007f170ce6ea04
+14. ? @ 0x00007f08baa1aac3
+15. ? @ 0x00007f08baaaba04
 
 . (UNFINISHED) (version 24.11.1.2557 (official build))
 
@@ -183,8 +183,8 @@ Caused by: java.sql.BatchUpdateException: Code: 341. DB::Exception: Exception ha
 [INFO] ------------------------------------------------------------------------
 [INFO] BUILD FAILURE
 [INFO] ------------------------------------------------------------------------
-[INFO] Total time:  21.006 s
-[INFO] Finished at: 2024-12-15T23:46:02+08:00
+[INFO] Total time:  22.778 s
+[INFO] Finished at: 2024-12-16T09:44:58+08:00
 [INFO] ------------------------------------------------------------------------
 [ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.2.5:test (default-test) on project clickhouse-acid-delete-test: 
 [ERROR] 
